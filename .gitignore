@@ -30,3 +30,17 @@
 *.exe
 *.out
 *.app
+
+*.ipch
+*.ilk
+
+*.idb
+*.pdb
+*.pdb
+
+.vs/
+
+bin/
+VALAR/bin/
+VALAR/obj/
+Vertigo/x64/
