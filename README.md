@@ -306,7 +306,7 @@ assert(retCode == Intel::VALAR_RETURN_CODE_SUCCESS);
 * ```VALAR_RETURN_CODE_NOT_INITIALIZED``` indicates that ```Intel::VALAR_Initialize``` function failed or was never called.
 * ```VALAR_RETURN_CODE_INVALID_DEVICE``` indicates that the opaque descriptors internal device is invalid.
 * ```VALAR_RETURN_CODE_NOT_SUPPORTED``` indicates that the device does not support VRS Tier 2
-* ```VALAR_RETURN_CODE_INVALID_ARGUMENT``` indicates that the Command List, UAV Heap, VRS buffer, or Color buffer is invalid.
+* ```VALAR_RETURN_CODE_INVALID_ARGUMENT``` indicates that the Command List, UAV Heap, or VRS buffer is invalid.
 
 Once the ```Intel::VALAR_ComputeMask``` function returns successfully you can apply the mask to any valid graphics command list. 
 
