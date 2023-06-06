@@ -187,7 +187,7 @@ Once a ```VALAR_DESCRIPTOR``` has been initialized it is possible to generate a 
 The ```m_uavHeap``` parameter must contain at least two UAVs; Slot 0 is reserved for the VALAR buffer, Slot 1 is reserved for the native resolution color buffer, and optionally Slot 3 is reserved for native resolution motion vectors, while slot 4 can optionally be used with XeSS to provide upscaled motion vectors.
 
 ```c++
- auto uavDescriptorSize = g_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+ auto uavDescriptorSize = m_d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
