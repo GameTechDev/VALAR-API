@@ -53,8 +53,6 @@ struct VALAR_DESCRIPTOR
     ID3D12Device*                       m_device                            = nullptr;
     ID3D12DescriptorHeap*               m_uavHeap                           = nullptr;
     ID3D12Resource*                     m_valarBuffer                       = nullptr;
-    ID3D12Resource*                     m_colorBuffer                       = nullptr;
-    ID3D12Resource*                     m_velocityBuffer                    = nullptr;
     ID3DBlob*                           m_shaderBlobs[VALAR_SHADER_COUNT];
     ID3D12GraphicsCommandList5*         m_commandList                       = nullptr;
     VALAR_DESCRIPTOR_OPAQUE*            m_pOpaque;
