@@ -208,8 +208,15 @@ m_colorBuffer->CreateUAV(m_d3dDevice.Get(), m_valarDescriptorHeap.Get(), 1);
 m_velocityBuffer = new ColorBuffer(m_d3dDevice.Get(), NoSRGB(m_backBufferFormat), 
     backBufferWidth, 
     backBufferHeight);
-m_velocityColorBuffer->GetCommittedResource()->SetName(L"Velocity Buffer Buffer");
-m_velocityColorBuffer->CreateUAV(m_d3dDevice.Get(), m_valarDescriptorHeap.Get(), 2);
+m_velocityBuffer->GetCommittedResource()->SetName(L"Velocity Buffer Buffer");
+m_velocityBuffer->CreateUAV(m_d3dDevice.Get(), m_valarDescriptorHeap.Get(), 2);
+
+// Create an xess "high-resolution velocity buffer UAV for VALAR to read
+m_upscaledVelocityBuffer = new ColorBuffer(m_d3dDevice.Get(), NoSRGB(m_backBufferFormat), 
+    backBufferWidth, 
+    backBufferHeight);
+m_upscaledVelocityBuffer->GetCommittedResource()->SetName(L"Upscaled Velocity Buffer Buffer");
+m_upscaledVelocityBuffer->CreateUAV(m_d3dDevice.Get(), m_valarDescriptorHeap.Get(), 3);
 ```
 
 Once the SRV/UAV heap and buffers are initialized update the descriptor with the descriptor heap (```m_uavHeap```), color buffer (```m_colorBuffer```), vrs buffer (```m_valarBuffer```), and velocity buffers (```m_velocityBuffer```). The width and height of the color buffer should also be provided in the ```m_bufferWidth``` and ```m_bufferHeight``` descriptor parameters.
@@ -218,6 +225,7 @@ Once the SRV/UAV heap and buffers are initialized update the descriptor with the
 Intel::VALAR_DESCRIPTOR& valarDesc = m_valarDescriptor;
 valarDesc.m_valarBuffer = m_valarBuffer.Get();
 valarDesc.m_uavHeap = m_valarDescriptorHeap.Get();
+valarDesc.m_commandList = commandList.Get();
 valarDesc.m_bufferHeight = m_height;
 valarDesc.m_bufferWidth = m_width;
 
