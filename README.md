@@ -180,44 +180,61 @@ Logger::WriteLine("MeshShader Prim: {0}", m_valarDescriptor.m_hwFeatures.m_meshS
 
 ## Generate a VALAR Mask
 
-Once a ```VALAR_DESCRIPTOR``` has been initialized it is possible to generate a VALAR mask. In addition to providing an initialized descriptor the application is also responsible for supplying a Graphics Command List (```m_commandList```), a UAV Heap (```m_uavHeap```), VRS Buffer (```m_valarBuffer```), a Color Buffer (```m_colorBuffer```), and an optional Velocity Buffer (```m_velocityBuffer```). 
+Once a ```VALAR_DESCRIPTOR``` has been initialized it is possible to generate a VALAR mask. In addition to providing an initialized descriptor the application is also responsible for supplying a Graphics Command List (```m_commandList```), a 4 slot UAV Heap (```m_uavHeap```), and a VRS Buffer (```m_valarBuffer```). 
+
+### VALAR Descriptor Heap Setup
+
+The ```m_valarHeap``` paramter must contain at least two UAVs; Slot 0 is reserved for the VALAR buffer, Slot 1 is reserved for the native resolution color buffer, and optionally Slot 3 is reserved for native resolution motion vectors, while slot 4 can optionally be used with XeSS to provide upscaled motion vectors.
 
 ```c++
-// Create a SRV/UAV descriptor heap for VALAR VRS, Color, and Velocity Buffers
-D3D12_DESCRIPTOR_HEAP_DESC srvUavHeapDesc = {};
-srvUavHeapDesc.NumDescriptors = 3;
-srvUavHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-srvUavHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&srvUavHeapDesc, IID_PPV_ARGS(&m_valarDescriptorHeap)));
+ auto uavDescriptorSize = g_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-// Create a 1/8th or 1/16th size vrs buffer with DXGI_FORMAT_R8_UINT format
-m_valarBuffer = new ColorBuffer(m_d3dDevice.Get(), DXGI_FORMAT_R8_UINT, 
-        (UINT)ceilf((float)backBufferWidth / (float)m_valarDescriptor.m_hwFeatures.m_shadingRateTileSize), 
-        (UINT)ceilf((float)backBufferHeight / (float)m_valarDescriptor.m_hwFeatures.m_shadingRateTileSize));
-m_valarBuffer->GetCommittedResource()->SetName(L"VALAR Buffer");
-m_valarBuffer->CreateUAV(m_d3dDevice.Get(), m_valarDescriptorHeap.Get(), 0);
+D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+uavDesc.Texture2DArray.PlaneSlice = 0;
+uavDesc.Texture2DArray.FirstArraySlice = 0;
+uavDesc.Texture2DArray.MipSlice = 0;
+uavDesc.Texture2DArray.ArraySize = 1;
 
-// Create a color buffer UAV for VALAR to read (or write in debug mode)
-m_colorBuffer = new ColorBuffer(m_d3dDevice.Get(), NoSRGB(m_backBufferFormat), 
-    backBufferWidth, 
-    backBufferHeight);
-m_colorBuffer->GetCommittedResource()->SetName(L"Color Buffer");
-m_colorBuffer->CreateUAV(m_d3dDevice.Get(), m_valarDescriptorHeap.Get(), 1);
+// Use UAV Slot 0 to pass in VALAR buffer UAV
+{
+    CD3DX12_CPU_DESCRIPTOR_HANDLE uavHandle(m_valarDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 0, uavDescriptorSize);
 
-// Create a velocity buffer UAV for VALAR to read
-m_velocityBuffer = new ColorBuffer(m_d3dDevice.Get(), NoSRGB(m_backBufferFormat), 
-    backBufferWidth, 
-    backBufferHeight);
-m_velocityBuffer->GetCommittedResource()->SetName(L"Velocity Buffer Buffer");
-m_velocityBuffer->CreateUAV(m_d3dDevice.Get(), m_valarDescriptorHeap.Get(), 2);
+    uavDesc.Format = DXGI_FORMAT_R8_UINT;
 
-// Create an xess "high-resolution velocity buffer UAV for VALAR to read
-m_upscaledVelocityBuffer = new ColorBuffer(m_d3dDevice.Get(), NoSRGB(m_backBufferFormat), 
-    backBufferWidth, 
-    backBufferHeight);
-m_upscaledVelocityBuffer->GetCommittedResource()->SetName(L"Upscaled Velocity Buffer Buffer");
-m_upscaledVelocityBuffer->CreateUAV(m_d3dDevice.Get(), m_valarDescriptorHeap.Get(), 3);
+    g_Device->CreateUnorderedAccessView(g_VRSTier2Buffer.GetResource(), nullptr, &uavDesc, uavHandle);
+}
+
+// Use UAV Slot 1 to pass in Color buffer UAV
+{
+    CD3DX12_CPU_DESCRIPTOR_HANDLE uavHandle(m_valarDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 1, uavDescriptorSize);
+
+    uavDesc.Format = Target.GetFormat();
+
+    g_Device->CreateUnorderedAccessView( Target.GetResource(), nullptr, &uavDesc, uavHandle);
+}
+
+// Use UAV Slot 2 to pass in Velocity buffer UAV
+{
+    CD3DX12_CPU_DESCRIPTOR_HANDLE uavHandle(m_valarDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 2, uavDescriptorSize);
+
+    uavDesc.Format = DXGI_FORMAT_R32_UINT;
+
+    g_Device->CreateUnorderedAccessView(g_VelocityBuffer.GetResource(), nullptr, &uavDesc, uavHandle);
+}
+
+// Use UAV Slot 3 to pass in Upscaled Velocity buffer UAV
+{
+    CD3DX12_CPU_DESCRIPTOR_HANDLE uavHandle(m_valarDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 3, uavDescriptorSize);
+
+    uavDesc.Format = DXGI_FORMAT_R16G16_FLOAT;
+
+    g_Device->CreateUnorderedAccessView(g_UpscaledVelocityBuffer.GetResource(), nullptr, &uavDesc, uavHandle);
+}
+
 ```
+
+### Setting VALAR Parameters
 
 Once the SRV/UAV heap and buffers are initialized update the descriptor with the descriptor heap (```m_uavHeap```), color buffer (```m_colorBuffer```), vrs buffer (```m_valarBuffer```), and velocity buffers (```m_velocityBuffer```). The width and height of the color buffer should also be provided in the ```m_bufferWidth``` and ```m_bufferHeight``` descriptor parameters.
 
@@ -245,7 +262,6 @@ valarDesc.m_environmentLuminance = 0.0f;
 valarDesc.m_colorBuffer = m_colorBuffer.Get();
 
 // Optional Paramters
-// valarDesc.m_useMotionVectors = true;
 // valarDesc.m_useWeberFechner = false;
 // valarDesc.m_weberFechnerConstant = 1.0;
 // valarDesc.m_allowQuarterRateShading = true;
@@ -260,6 +276,29 @@ assert(retCode == Intel::VALAR_RETURN_CODE_SUCCESS);
 // ...
 // Post-Process / GUI
 // ...
+```
+
+### Using Velocity
+
+VALAR supports both native-resolution and XeSS upscaled resolution velocity buffers. As mentioned in the previous section native-resolution velocity is passed in to the compute shader in ```m_uavHeap``` UAV slot 2, while the upscaled motion vectors are passed in UAV slot 3. To enable native resolution motion vectors set ```m_useMotionVectors = true``` and ```m_useUpscaledMotionVectors = false```. To enable XeSS Upscaled resolution motion vectors set ```m_useMotionVectors = true``` and ```m_useUpscaledMotionVectors = true``` and specify upscaled width and height in ```m_upscaledWidth``` and ```m_upscaledHeight```.
+
+```c++
+
+// Enable Native Resolution Motion Vector Support
+m_valarDescriptor.m_useMotionVectors = true;
+m_valarDescriptor.m_useUpscaleMotionVectors = false;
+
+// ...
+
+// Enable Upscaled Resolution Motion Vector Support
+m_valarDescriptor.m_useMotionVectors = true;
+m_valarDescriptor.m_useUpscaleMotionVectors = true;
+m_valarDescriptor.m_upscaledWidth = m_upscaledWidth;
+m_valarDescriptor.m_upscaledHeight = m_upscaledHeight;
+
+Intel::VALAR_RETURN_CODE retCode = Intel::VALAR_ComputeMask(valarDesc);
+assert(retCode == Intel::VALAR_RETURN_CODE_SUCCESS);
+
 ```
 
 ```Intel::VALAR_ComputeMask``` will return an return code of ```VALAR_RETURN_CODE_SUCCESS``` if the mask is successfully generated. Otherwise the following VALAR error codes will be returned.
@@ -404,14 +443,11 @@ If the call to any of these functions is successful a return code ```VALAR_RETUR
 
 ![Alt text](/VALAR/img/VALAR_Screenshot_1080p_Allow4x4_DebugOverlay.png?raw=true "Debug Overlay")
 
-The VALAR API provides a debug overlay that can be used to visualize the VALAR buffer at runtime to aid in debugging. To use the debug overlay a ```VALAR_DESCRIPTOR``` must be used with the  ```m_debugOverlay``` field set to true. The ```VALAR_DESCRIPTOR``` must also have a valid ```ID3D12GraphicsCommandList5``` pointer set for the ```m_commandList``` field along with valid resources for the color buffer (```m_colorBuffer```), VRS buffer (```m_valarBuffer```), and SRV/UAV heap (```m_uavHeap```).
+The VALAR API provides a debug overlay that can be used to visualize the VALAR buffer at runtime to aid in debugging. The debug visualization works on both native resolution render targets as well as upscaled render targets from Intel XeSS. To use the debug overlay a ```VALAR_DESCRIPTOR``` must be used with the  ```m_debugOverlay``` field set to true. The ```VALAR_DESCRIPTOR``` must also have a valid ```ID3D12GraphicsCommandList5``` pointer set for the ```m_commandList``` field along with valid resources for the color buffer (```m_colorBuffer```), VRS buffer (```m_valarBuffer```), and SRV/UAV heap (```m_uavHeap```).
+
+The Debug Overlay requires a 2 slot UAV heap; UAV slot 0 contains the VRS Buffer to visualize, while UAV slot 2 will contain a native resolution color UAV or an XeSS upscaled color UAV to draw the overlay on. An upscaled width and height must always be passed in through the descriptor using ```m_upscaledWidth``` and ```m_upscaledHeight```. When using a native resolution color buffer, set ```m_upscaledWidth``` and ```m_upscaledHeight``` equal to ```m_nativeWidth``` and ```m_nativeHeight``` respectively. 
 
 ```c++
-// ...
-valarDesc.m_enable = true;
-valarDesc.m_debugOverlay = true;
-valarDesc.m_commandList = commandList.Get();
-valarDesc.m_uavHeap = m_valarDescriptorHeap.Get();
 
 // ...
 // Render Scene
@@ -420,6 +456,55 @@ valarDesc.m_uavHeap = m_valarDescriptorHeap.Get();
 // ... 
 // Generate VALAR Mask
 // ... 
+
+// Render the Debug Overlay
+D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+uavDesc.Texture2DArray.PlaneSlice = 0;
+uavDesc.Texture2DArray.FirstArraySlice = 0;
+uavDesc.Texture2DArray.MipSlice = 0;
+uavDesc.Texture2DArray.ArraySize = 1;
+uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+
+// Use UAV Slot 0 for VRS Buffer with format of DXGI_FORMAT_R8_UINT
+{
+    CD3DX12_CPU_DESCRIPTOR_HANDLE uavHandle(m_valarDebugHeap->GetCPUDescriptorHandleForHeapStart(), 0, uavDescriptorSize);
+
+    uavDesc.Format = DXGI_FORMAT_R8_UINT;
+          
+    g_Device->CreateUnorderedAccessView(g_VRSTier2Buffer.GetResource(), nullptr, &uavDesc, uavHandle);
+}
+
+// Use UAV Slot 1 for Upscaled Color buffer or Native Color Buffer
+if(upscaledOverlay)
+{
+    CD3DX12_CPU_DESCRIPTOR_HANDLE uavHandle(m_valarDebugHeap->GetCPUDescriptorHandleForHeapStart(), 1, uavDescriptorSize);
+
+    uavDesc.Format = g_UpscaledSceneColorBuffer.GetFormat();
+
+    g_Device->CreateUnorderedAccessView(g_UpscaledSceneColorBuffer.GetResource(), nullptr, &uavDesc, uavHandle);
+
+    valarDesc.m_upscaleHeight = g_UpscaledSceneColorBuffer.GetHeight();
+    valarDesc.m_upscaleWidth = g_UpscaledSceneColorBuffer.GetWidth();
+}
+else
+{
+    CD3DX12_CPU_DESCRIPTOR_HANDLE uavHandle(m_valarDebugHeap->GetCPUDescriptorHandleForHeapStart(), 1, uavDescriptorSize);
+
+    uavDesc.Format = g_SceneColorBuffer.GetFormat();
+
+    g_Device->CreateUnorderedAccessView(g_SceneColorBuffer.GetResource(), nullptr, &uavDesc, uavHandle);
+
+    valarDesc.m_upscaleHeight = g_SceneColorBuffer.GetHeight();
+    valarDesc.m_upscaleWidth = g_SceneColorBuffer.GetWidth();
+}
+
+valarDesc.m_debugOverlay = true;
+valarDesc.m_debugGrid = VRS::DebugDrawDrawGrid;
+valarDesc.m_bufferHeight = Target.GetHeight();
+valarDesc.m_bufferWidth = Target.GetWidth();
+
+// Use the 2 slot Debug Heap
+valarDesc.m_uavHeap = m_valarDebugHeap;
 
 Intel::VALAR_RETURN_CODE retCode = Intel::VALAR_DebugOverlay(valarDesc);
 assert(retCode == Intel::VALAR_RETURN_CODE_SUCCESS);
