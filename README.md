@@ -280,7 +280,7 @@ assert(retCode == Intel::VALAR_RETURN_CODE_SUCCESS);
 
 ### Using Velocity
 
-VALAR supports both native-resolution and XeSS upscaled resolution velocity buffers. As mentioned in the previous section native-resolution velocity is passed in to the compute shader in ```m_uavHeap``` UAV slot 2, while the upscaled motion vectors are passed in UAV slot 3. To enable native resolution motion vectors set ```m_useMotionVectors = true``` and ```m_useUpscaledMotionVectors = false```. To enable XeSS Upscaled resolution motion vectors set ```m_useMotionVectors = true``` and ```m_useUpscaledMotionVectors = true``` and specify upscaled width and height in ```m_upscaledWidth``` and ```m_upscaledHeight``` fields.
+VALAR supports both native-resolution and XeSS upscaled-resolution motion vectors. As mentioned in the previous section native-resolution velocity is passed in to the compute shader in ```m_uavHeap``` UAV slot 2, while the upscaled motion vectors are passed in UAV slot 3. To enable native-resolution motion vectors set ```m_useMotionVectors = true``` and ```m_useUpscaledMotionVectors = false```. To enable XeSS upscaled-resolution motion vectors set ```m_useMotionVectors = true``` and ```m_useUpscaledMotionVectors = true``` and specify upscaled width and height in ```m_upscaledWidth``` and ```m_upscaledHeight``` fields.
 
 ```c++
 
