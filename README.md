@@ -202,7 +202,7 @@ uavDesc.Texture2DArray.ArraySize = 1;
 
     uavDesc.Format = DXGI_FORMAT_R8_UINT;
 
-    g_Device->CreateUnorderedAccessView(g_VRSTier2Buffer.GetResource(), nullptr, &uavDesc, uavHandle);
+    m_d3dDevice->CreateUnorderedAccessView(g_VRSTier2Buffer.GetResource(), nullptr, &uavDesc, uavHandle);
 }
 
 // Use UAV Slot 1 to pass in Color buffer UAV
@@ -211,7 +211,7 @@ uavDesc.Texture2DArray.ArraySize = 1;
 
     uavDesc.Format = Target.GetFormat();
 
-    g_Device->CreateUnorderedAccessView( Target.GetResource(), nullptr, &uavDesc, uavHandle);
+    m_d3dDevice->CreateUnorderedAccessView( Target.GetResource(), nullptr, &uavDesc, uavHandle);
 }
 
 // Use UAV Slot 2 to pass in Velocity buffer UAV
@@ -220,7 +220,7 @@ uavDesc.Texture2DArray.ArraySize = 1;
 
     uavDesc.Format = DXGI_FORMAT_R32_UINT;
 
-    g_Device->CreateUnorderedAccessView(g_VelocityBuffer.GetResource(), nullptr, &uavDesc, uavHandle);
+    m_d3dDevice->CreateUnorderedAccessView(g_VelocityBuffer.GetResource(), nullptr, &uavDesc, uavHandle);
 }
 
 // Use UAV Slot 3 to pass in Upscaled Velocity buffer UAV
@@ -229,7 +229,7 @@ uavDesc.Texture2DArray.ArraySize = 1;
 
     uavDesc.Format = DXGI_FORMAT_R16G16_FLOAT;
 
-    g_Device->CreateUnorderedAccessView(g_UpscaledVelocityBuffer.GetResource(), nullptr, &uavDesc, uavHandle);
+    m_d3dDevice->CreateUnorderedAccessView(g_UpscaledVelocityBuffer.GetResource(), nullptr, &uavDesc, uavHandle);
 }
 
 ```
@@ -471,7 +471,7 @@ uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
 
     uavDesc.Format = DXGI_FORMAT_R8_UINT;
           
-    g_Device->CreateUnorderedAccessView(g_VRSTier2Buffer.GetResource(), nullptr, &uavDesc, uavHandle);
+    m_d3dDevice->CreateUnorderedAccessView(g_VRSTier2Buffer.GetResource(), nullptr, &uavDesc, uavHandle);
 }
 
 // Use UAV Slot 1 for Upscaled Color buffer or Native Color Buffer
@@ -481,7 +481,7 @@ if(upscaledOverlay)
 
     uavDesc.Format = g_UpscaledSceneColorBuffer.GetFormat();
 
-    g_Device->CreateUnorderedAccessView(g_UpscaledSceneColorBuffer.GetResource(), nullptr, &uavDesc, uavHandle);
+    m_d3dDevice->CreateUnorderedAccessView(g_UpscaledSceneColorBuffer.GetResource(), nullptr, &uavDesc, uavHandle);
 
     valarDesc.m_upscaleHeight = g_UpscaledSceneColorBuffer.GetHeight();
     valarDesc.m_upscaleWidth = g_UpscaledSceneColorBuffer.GetWidth();
@@ -492,7 +492,7 @@ else
 
     uavDesc.Format = g_SceneColorBuffer.GetFormat();
 
-    g_Device->CreateUnorderedAccessView(g_SceneColorBuffer.GetResource(), nullptr, &uavDesc, uavHandle);
+    m_d3dDevice->CreateUnorderedAccessView(g_SceneColorBuffer.GetResource(), nullptr, &uavDesc, uavHandle);
 
     valarDesc.m_upscaleHeight = g_SceneColorBuffer.GetHeight();
     valarDesc.m_upscaleWidth = g_SceneColorBuffer.GetWidth();
