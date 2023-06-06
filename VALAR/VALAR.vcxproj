@@ -23,8 +23,6 @@
     <ClInclude Include="inc\VALAR.h" />
     <ClInclude Include="src\Valar16x16CS.h" />
     <ClInclude Include="src\Valar8x8CS.h" />
-    <ClInclude Include="src\ValarDebug16x16CS.h" />
-    <ClInclude Include="src\ValarDebug8x8CS.h" />
     <ClInclude Include="src\VALAROpaque.h" />
   </ItemGroup>
   <ItemGroup>
@@ -53,18 +51,7 @@
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">g_valar8x8ByteCode</VariableName>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">-Qembed_debug</AdditionalOptions>
     </FxCompile>
-    <FxCompile Include="src\ValarDebug16x16CS.hlsl">
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.2</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.2</ShaderModel>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">src\%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">src\%(Filename).h</HeaderFileOutput>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">g_valar16x16DebugByteCode</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">g_valar16x16DebugByteCode</VariableName>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">-Qembed_debug</AdditionalOptions>
-    </FxCompile>
-    <FxCompile Include="src\ValarDebug8x8CS.hlsl">
+    <FxCompile Include="src\ValarDebugCS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.2</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
@@ -78,6 +65,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
+    <None Include="src\ValarCS.hlsli" />
     <None Include="src\VRSCommon.hlsli" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

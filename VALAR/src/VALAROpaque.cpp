@@ -27,11 +27,10 @@
 
 #include "..\..\ThirdParty\d3dx12.h"
 
-#ifdef EMBED_VALAR_SHADERS
+#ifdef USE_EMBEDED_SHADERS
     #include "Valar8x8CS.h"
     #include "Valar16x16CS.h"
-    #include "ValarDebug8x8CS.h"
-    #include "ValarDebug16x16CS.h"
+    #include "ValarDebugCS.h"
 #endif
 
 Intel::VALAR_DESCRIPTOR::VALAR_DESCRIPTOR()
@@ -39,6 +38,15 @@ Intel::VALAR_DESCRIPTOR::VALAR_DESCRIPTOR()
     static VALAR_DESCRIPTOR_OPAQUE opaque;
 
     m_pOpaque = &opaque;
+}
+
+const Intel::VALAR_RETURN_CODE Intel::VALAR_CheckSupport(VALAR_DESCRIPTOR& desc)
+{
+    if (desc.m_device == nullptr) {
+        return VALAR_RETURN_CODE_INVALID_DEVICE;
+    }
+
+    return CheckHardwareSupport(desc, desc.m_hwFeatures);
 }
 
 const Intel::VALAR_RETURN_CODE Intel::VALAR_Initialize(Intel::VALAR_DESCRIPTOR & desc)
@@ -58,13 +66,13 @@ const Intel::VALAR_RETURN_CODE Intel::VALAR_Initialize(Intel::VALAR_DESCRIPTOR &
             return retCode;
         }
 
+        retCode = CreateVALARDebugRootSignature(desc);
+        if (retCode != VALAR_RETURN_CODE_SUCCESS) {
+            return retCode;
+        }
+
         if (desc.m_hwFeatures.m_shadingRateTileSize == INTEL_TILE_SIZE) {
             retCode = LoadShader(desc, VALAR_SHADER_8X8);
-            if (retCode != VALAR_RETURN_CODE_SUCCESS) {
-                return retCode;
-            }
-
-            retCode = LoadShader(desc, VALAR_DEBUG_SHADER_8X8);
             if (retCode != VALAR_RETURN_CODE_SUCCESS) {
                 return retCode;
             }
@@ -73,11 +81,11 @@ const Intel::VALAR_RETURN_CODE Intel::VALAR_Initialize(Intel::VALAR_DESCRIPTOR &
             if (retCode != VALAR_RETURN_CODE_SUCCESS) {
                 return retCode;
             }
+        }
 
-            retCode = LoadShader(desc, VALAR_DEBUG_SHADER_16X16);
-            if (retCode != VALAR_RETURN_CODE_SUCCESS) {
-                return retCode;
-            }
+        retCode = LoadShader(desc, VALAR_DEBUG_SHADER);
+        if (retCode != VALAR_RETURN_CODE_SUCCESS) {
+            return retCode;
         }
 
         desc.m_pOpaque->m_device = desc.m_device;
@@ -146,7 +154,7 @@ Intel::VALAR_RETURN_CODE Intel::CheckHardwareSupport(Intel::VALAR_DESCRIPTOR& de
      descRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 4, 0);
      descRange[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 13, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 
-     rootParams[0].InitAsConstants(12, 0);
+     rootParams[0].InitAsConstants(13, 0);
      rootParams[1].InitAsDescriptorTable(1, &descRange[0]);
      rootSignatureDesc.Init_1_1(_countof(rootParams), rootParams, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_NONE);
 
@@ -164,12 +172,49 @@ Intel::VALAR_RETURN_CODE Intel::CheckHardwareSupport(Intel::VALAR_DESCRIPTOR& de
      return VALAR_RETURN_CODE_SUCCESS;
  }
 
+ Intel::VALAR_RETURN_CODE Intel::CreateVALARDebugRootSignature(Intel::VALAR_DESCRIPTOR& desc)
+ {
+     ComPtr<ID3DBlob> signature, errors;
+
+     CD3DX12_DESCRIPTOR_RANGE1 descRange[2] = {};
+     CD3DX12_ROOT_PARAMETER1 rootParams[2] = {};
+     D3D12_STATIC_SAMPLER_DESC sampler = {};
+     D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
+     CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
+
+     featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+
+     if (FAILED(desc.m_device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData)))) {
+         featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+     }
+
+     descRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 2, 0);
+     descRange[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 6, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+
+     rootParams[0].InitAsConstants(6, 0);
+     rootParams[1].InitAsDescriptorTable(1, &descRange[0]);
+     rootSignatureDesc.Init_1_1(_countof(rootParams), rootParams, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_NONE);
+
+     if (FAILED(D3D12SerializeVersionedRootSignature(&rootSignatureDesc, &signature, &errors))) {
+         return VALAR_RETURN_CODE_ROOTSIG_FAIL;
+     }
+
+     auto sig = desc.m_pOpaque->m_valarDebugRootSignature.Get();
+
+     if (FAILED(desc.m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&sig)))) {
+         return VALAR_RETURN_CODE_ROOTSIG_FAIL;
+     }
+     desc.m_pOpaque->m_valarDebugRootSignature = sig;
+
+     return VALAR_RETURN_CODE_SUCCESS;
+ }
+
 Intel::VALAR_RETURN_CODE Intel::LoadShader(Intel::VALAR_DESCRIPTOR& desc, VALAR_SHADER_PERMUTATIONS permutation)
 {
     UINT8* pComputeShaderData = nullptr;
     UINT computeShaderDataLength = 0;
 
-#ifdef EMBED_VALAR_SHADERS
+#ifdef USE_EMBEDED_SHADERS
     switch (permutation)
     {
     case VALAR_SHADER_8X8:
@@ -180,13 +225,9 @@ Intel::VALAR_RETURN_CODE Intel::LoadShader(Intel::VALAR_DESCRIPTOR& desc, VALAR_
         pComputeShaderData = (UINT8*)g_valar16x16ByteCode;
         computeShaderDataLength = sizeof(g_valar16x16ByteCode) / sizeof(const unsigned char);
         break;
-    case VALAR_DEBUG_SHADER_8X8:
+    case VALAR_DEBUG_SHADER:
         pComputeShaderData = (UINT8*)g_valar8x8DebugByteCode;
         computeShaderDataLength = sizeof(g_valar8x8DebugByteCode) / sizeof(const unsigned char);
-        break;
-    case VALAR_DEBUG_SHADER_16X16:
-        pComputeShaderData = (UINT8*)g_valar16x16DebugByteCode;
-        computeShaderDataLength = sizeof(g_valar16x16DebugByteCode) / sizeof(const unsigned char);
         break;
     }
 #else
@@ -198,7 +239,13 @@ Intel::VALAR_RETURN_CODE Intel::LoadShader(Intel::VALAR_DESCRIPTOR& desc, VALAR_
 #endif
 
     D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
-    psoDesc.pRootSignature = desc.m_pOpaque->m_valarRootSignature.Get();
+
+    if (permutation == VALAR_DEBUG_SHADER) {
+        psoDesc.pRootSignature = desc.m_pOpaque->m_valarDebugRootSignature.Get();
+    } else {
+        psoDesc.pRootSignature = desc.m_pOpaque->m_valarRootSignature.Get();
+    }
+
     psoDesc.CS = CD3DX12_SHADER_BYTECODE(pComputeShaderData, computeShaderDataLength);
    
     if (FAILED(desc.m_device->CreateComputePipelineState(&psoDesc, IID_PPV_ARGS(&desc.m_pOpaque->m_valarShaderPermutations[permutation])))) {
@@ -215,12 +262,12 @@ const Intel::VALAR_RETURN_CODE Intel::VALAR_Release(const Intel::VALAR_DESCRIPTO
 
     if (desc.m_pOpaque->m_isInitialized)
     {
+        VALAR_SAFE_RELEASE(desc.m_pOpaque->m_device);
+        VALAR_SAFE_RELEASE(desc.m_pOpaque->m_valarRootSignature);
+        VALAR_SAFE_RELEASE(desc.m_pOpaque->m_valarDebugRootSignature);
         VALAR_SAFE_RELEASE(desc.m_pOpaque->m_valarShaderPermutations[VALAR_SHADER_8X8]);
         VALAR_SAFE_RELEASE(desc.m_pOpaque->m_valarShaderPermutations[VALAR_SHADER_16X16]);
-        VALAR_SAFE_RELEASE(desc.m_pOpaque->m_valarShaderPermutations[VALAR_DEBUG_SHADER_8X8]);
-        VALAR_SAFE_RELEASE(desc.m_pOpaque->m_valarShaderPermutations[VALAR_DEBUG_SHADER_16X16]);
-        VALAR_SAFE_RELEASE(desc.m_pOpaque->m_valarRootSignature);
-        VALAR_SAFE_RELEASE(desc.m_pOpaque->m_device);
+        VALAR_SAFE_RELEASE(desc.m_pOpaque->m_valarShaderPermutations[VALAR_DEBUG_SHADER]);
 
         desc.m_pOpaque->m_isInitialized = false;
         retCode = VALAR_RETURN_CODE_SUCCESS;
@@ -236,14 +283,6 @@ const Intel::VALAR_RETURN_CODE Intel::VALAR_DebugOverlay(const VALAR_DESCRIPTOR&
     }
 
     if (desc.m_commandList == nullptr) {
-        return VALAR_RETURN_CODE_INVALID_ARGUMENT;
-    }
-
-    if (desc.m_colorBuffer == nullptr) {
-        return VALAR_RETURN_CODE_INVALID_ARGUMENT;
-    }
-
-    if (desc.m_valarBuffer == nullptr) {
         return VALAR_RETURN_CODE_INVALID_ARGUMENT;
     }
 
@@ -264,20 +303,27 @@ const Intel::VALAR_RETURN_CODE Intel::VALAR_DebugOverlay(const VALAR_DESCRIPTOR&
 
         ID3D12DescriptorHeap* ppHeapsCompute[] = { desc.m_uavHeap };
         desc.m_commandList->SetDescriptorHeaps(_countof(ppHeapsCompute), ppHeapsCompute);
-        desc.m_commandList->SetComputeRootSignature(desc.m_pOpaque->m_valarRootSignature.Get());
-        desc.m_commandList->SetComputeRootDescriptorTable(1, desc.m_uavHeap->GetGPUDescriptorHandleForHeapStart());
+        desc.m_commandList->SetComputeRootSignature(desc.m_pOpaque->m_valarDebugRootSignature.Get());
 
-        if (desc.m_pOpaque->m_featureSupport.m_shadingRateTileSize == INTEL_TILE_SIZE) {
-            desc.m_commandList->SetPipelineState(desc.m_pOpaque->m_valarShaderPermutations[VALAR_DEBUG_SHADER_8X8].Get());
-        } else if (desc.m_pOpaque->m_featureSupport.m_shadingRateTileSize == OTHER_TILE_SIZE) {
-            desc.m_commandList->SetPipelineState(desc.m_pOpaque->m_valarShaderPermutations[VALAR_DEBUG_SHADER_16X16].Get());
-        } else {
-            assert(false);
-        }
+        VALAR_DEBUG_CONSTANTS constants =
+        {
+            desc.m_bufferWidth,
+            desc.m_bufferHeight,
+
+            desc.m_upscaleWidth,
+            desc.m_upscaleHeight,
+
+            desc.m_pOpaque->m_featureSupport.m_shadingRateTileSize,
+
+            desc.m_debugGrid,
+        };
+
+        desc.m_commandList->SetComputeRoot32BitConstants(0, 6, &constants, 0);
+        desc.m_commandList->SetComputeRootDescriptorTable(1, desc.m_uavHeap->GetGPUDescriptorHandleForHeapStart());
+        desc.m_commandList->SetPipelineState(desc.m_pOpaque->m_valarShaderPermutations[VALAR_DEBUG_SHADER].Get());
 
         desc.m_commandList->Dispatch(
-            (UINT)ceil((float)desc.m_bufferWidth / (float)desc.m_pOpaque->m_featureSupport.m_shadingRateTileSize),
-            (UINT)ceil((float)desc.m_bufferHeight / (float)desc.m_pOpaque->m_featureSupport.m_shadingRateTileSize), 1);
+            (UINT)desc.m_upscaleWidth, (UINT)desc.m_upscaleHeight, 1);
 
         barrier = CD3DX12_RESOURCE_BARRIER::Transition(desc.m_valarBuffer,
             D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
@@ -295,10 +341,6 @@ const Intel::VALAR_RETURN_CODE Intel::VALAR_ComputeMask(const Intel::VALAR_DESCR
     }
 
     if (desc.m_commandList == nullptr) {
-        return VALAR_RETURN_CODE_INVALID_ARGUMENT;
-    }
-        
-    if (desc.m_colorBuffer == nullptr) {
         return VALAR_RETURN_CODE_INVALID_ARGUMENT;
     }
         
@@ -345,7 +387,7 @@ const Intel::VALAR_RETURN_CODE Intel::VALAR_ComputeMask(const Intel::VALAR_DESCR
             desc.m_useUpscaleMotionVectors
         };
 
-        desc.m_commandList->SetComputeRoot32BitConstants(0, 10, &constants, 0);
+        desc.m_commandList->SetComputeRoot32BitConstants(0, 13, &constants, 0);
         desc.m_commandList->SetComputeRootDescriptorTable(1, desc.m_uavHeap->GetGPUDescriptorHandleForHeapStart());
 
         if (desc.m_pOpaque->m_featureSupport.m_shadingRateTileSize == INTEL_TILE_SIZE) {
@@ -357,8 +399,8 @@ const Intel::VALAR_RETURN_CODE Intel::VALAR_ComputeMask(const Intel::VALAR_DESCR
         }
 
         desc.m_commandList->Dispatch(
-            (UINT)ceil((float)desc.m_bufferWidth / (float)desc.m_pOpaque->m_featureSupport.m_shadingRateTileSize),
-            (UINT)ceil((float)desc.m_bufferHeight / (float)desc.m_pOpaque->m_featureSupport.m_shadingRateTileSize), 1);
+            (UINT)ceilf((float)desc.m_bufferWidth / (float)desc.m_pOpaque->m_featureSupport.m_shadingRateTileSize),
+            (UINT)ceilf((float)desc.m_bufferHeight / (float)desc.m_pOpaque->m_featureSupport.m_shadingRateTileSize), 1);
 
         barrier = CD3DX12_RESOURCE_BARRIER::Transition(desc.m_valarBuffer,
             D3D12_RESOURCE_STATE_UNORDERED_ACCESS,

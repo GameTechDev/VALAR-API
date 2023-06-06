@@ -32,6 +32,7 @@ namespace Intel
     {
         ComPtr<ID3D12Device>        m_device;
         ComPtr<ID3D12RootSignature> m_valarRootSignature;
+        ComPtr<ID3D12RootSignature> m_valarDebugRootSignature;
         ComPtr<ID3D12PipelineState> m_valarShaderPermutations[VALAR_SHADER_COUNT];
         VALAR_HARDWARE_FEATURES     m_featureSupport{};
         bool                        m_isInitialized = false;
@@ -51,11 +52,24 @@ namespace Intel
         UINT                        m_allowQuarterRateShading;
         UINT                        m_upscaledWidth;
         UINT                        m_upscaledHeight;
-        UINT                        m_useHighResMotionVectors;
+        UINT                        m_useHighResMotionVectors;          
+    };
 
+    struct VALAR_DEBUG_CONSTANTS
+    {
+        UINT m_nativeWidth;
+        UINT m_nativeHeight;
+
+        UINT m_upscaledWidth;
+        UINT m_upscaledHeight;
+
+        UINT m_shadingRateTileSize;
+
+        bool m_debugDrawGrid;
     };
 
     VALAR_RETURN_CODE CheckHardwareSupport(VALAR_DESCRIPTOR& desc, VALAR_HARDWARE_FEATURES& featureSupport);
     VALAR_RETURN_CODE CreateVALARRootSignature(VALAR_DESCRIPTOR& desc);
+    VALAR_RETURN_CODE CreateVALARDebugRootSignature(VALAR_DESCRIPTOR& desc);
     VALAR_RETURN_CODE LoadShader(VALAR_DESCRIPTOR& desc, VALAR_SHADER_PERMUTATIONS permutation);
 }

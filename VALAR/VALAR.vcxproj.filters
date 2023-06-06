@@ -27,16 +27,10 @@
     <ClInclude Include="src\VALAROpaque.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ValarDebug8x8CS.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\Valar16x16CS.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Valar8x8CS.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ValarDebug16x16CS.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\d3dx12.h">
@@ -49,10 +43,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="src\ValarDebug8x8CS.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="src\ValarDebug16x16CS.hlsl">
+    <FxCompile Include="src\ValarDebugCS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="src\Valar8x8CS.hlsl">
@@ -67,5 +58,8 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="README.md" />
+    <None Include="src\ValarCS.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

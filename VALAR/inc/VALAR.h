@@ -19,7 +19,8 @@
 // OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
-#define EMBED_VALAR_SHADERS
+#define USE_EMBEDED_SHADERS
+#define USE_DYNAMIC_DESCRIPTOR
 
 namespace Intel
 {
@@ -69,8 +70,7 @@ namespace Intel
     {
         VALAR_SHADER_8X8,
         VALAR_SHADER_16X16,
-        VALAR_DEBUG_SHADER_8X8,
-        VALAR_DEBUG_SHADER_16X16,
+        VALAR_DEBUG_SHADER,
         VALAR_SHADER_COUNT
     } VALAR_SHADER_PERMUTATIONS;
 
@@ -102,6 +102,7 @@ namespace Intel
         bool                                m_useMotionVectors                  = false;
         bool                                m_useUpscaleMotionVectors           = false;
         bool                                m_debugOverlay                      = false;
+        bool                                m_debugGrid                         = false;
         bool                                m_enabled                           = true;
         UINT                                m_bufferWidth                       = 0;
         UINT                                m_bufferHeight                      = 0;
@@ -110,14 +111,13 @@ namespace Intel
         ID3D12Device*                       m_device                            = nullptr;
         ID3D12DescriptorHeap*               m_uavHeap                           = nullptr;
         ID3D12Resource*                     m_valarBuffer                       = nullptr;
-        ID3D12Resource*                     m_colorBuffer                       = nullptr;
-        ID3D12Resource*                     m_velocityBuffer                    = nullptr;
         ID3DBlob*                           m_shaderBlobs[VALAR_SHADER_COUNT];
         ID3D12GraphicsCommandList5*         m_commandList                       = nullptr;
         VALAR_DESCRIPTOR_OPAQUE*            m_pOpaque;
         VALAR_HARDWARE_FEATURES             m_hwFeatures;
     };
 
+    const VALAR_RETURN_CODE VALAR_CheckSupport(VALAR_DESCRIPTOR& desc);
     const VALAR_RETURN_CODE VALAR_Initialize(VALAR_DESCRIPTOR& desc);
     const VALAR_RETURN_CODE VALAR_Release(const VALAR_DESCRIPTOR& desc);
     const VALAR_RETURN_CODE VALAR_ComputeMask(const VALAR_DESCRIPTOR& desc);
