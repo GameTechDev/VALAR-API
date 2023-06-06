@@ -119,8 +119,7 @@ There are four shaders that are used to support VALAR at runtime, there are two 
 
 * ```Valar8x8CS.hlsl``` VALAR Compute Shader for 8x8 Shading Rate Tile Size (Supported by Intel) 
 * ```Valar16x16CS.hlsl``` VALAR Compute Shader for 16x16 Shading Rate Tile Size (Other Vendors)
-* ```ValarDebug8x8CS.hlsl``` VALAR Debug Overlay Shader for 8x8 Shading Rate Tile Size
-* ```ValarDebug16x16CS.hlsl``` VALAR Debug Overlay Shader for 16x16 Shading Rate Tile Size
+* ```ValarDebugCS.hlsl``` VALAR Debug Overlay Shader for 8x8 & 16x16 Shading Rate Tile Size
 
 By default these shaders are embedded into the ```.lib``` file generated at compile time. The API uses the ```#define EMBED_VALAR_SHADERS``` to control the inclusion of the embedded shaders. However, if ```EMBED_VALAR_SHADERS``` is not defined shader blobs must be provided at initialize time. Failure to supply blobs in the VALAR descriptor will result in a ```VALAR_RETURN_CODE_PSO_FAIL``` return code. For example, the following code initializes the VALAR API using byte code arrays as ```ID3DBlobs```. It is up to the application programmer to determine how to load the byte code arrays at runtime.
 
@@ -139,14 +138,9 @@ D3DCreateBlob(size[VALAR_SHADER_16X16], &m_valarDescriptor.m_shaderBlobs[VALAR_S
 memcpy(m_valarDescriptor.m_shaderBlobs[VALAR_SHADER_16X16]->GetBufferPointer(), g_valar16x16ByteCode, size[VALAR_SHADER_16X16]);
 
 // Provide the VALAR 8x8 Debug Shader Blob Byte Code.
-size[VALAR_DEBUG_SHADER_8X8] = sizeof(g_valar8x8DebugByteCode) / sizeof(const unsigned char);
-D3DCreateBlob(size[VALAR_DEBUG_SHADER_8X8], &m_valarDescriptor.m_shaderBlobs[VALAR_DEBUG_SHADER_8X8]);
-memcpy(m_valarDescriptor.m_shaderBlobs[VALAR_DEBUG_SHADER_8X8]->GetBufferPointer(), g_valar8x8DebugByteCode, size[VALAR_DEBUG_SHADER_8X8]);
-
-// Provide the VALAR 16x16 Shader Blob Byte Code.
-size[VALAR_DEBUG_SHADER_16X16] = sizeof(g_valar16x16DebugByteCode) / sizeof(const unsigned char);
-D3DCreateBlob(size[VALAR_DEBUG_SHADER_16X16], &m_valarDescriptor.m_shaderBlobs[VALAR_DEBUG_SHADER_16X16]);
-memcpy(m_valarDescriptor.m_shaderBlobs[VALAR_DEBUG_SHADER_16X16]->GetBufferPointer(), g_valar16x16DebugByteCode, size[VALAR_DEBUG_SHADER_16X16]);
+size[VALAR_DEBUG_SHADER] = sizeof(g_valar8x8DebugByteCode) / sizeof(const unsigned char);
+D3DCreateBlob(size[VALAR_DEBUG_SHADER], &m_valarDescriptor.m_shaderBlobs[VALAR_DEBUG_SHADER]);
+memcpy(m_valarDescriptor.m_shaderBlobs[VALAR_DEBUG_SHADER]->GetBufferPointer(), g_valar8x8DebugByteCode, size[VALAR_DEBUG_SHADER]);
 
 // Check VRS Hardware Features & Initialize the Opaque Descriptor with Custom Shaders
 Intel::VALAR_RETURN_CODE returnCode = Intel::VALAR_Initialize(m_valarDescriptor);
@@ -222,9 +216,7 @@ Once the SRV/UAV heap and buffers are initialized update the descriptor with the
 
 ```c++
 Intel::VALAR_DESCRIPTOR& valarDesc = m_valarDescriptor;
-valarDesc.m_colorBuffer = m_colorBuffer.Get();
 valarDesc.m_valarBuffer = m_valarBuffer.Get();
-valarDesc.m_velocityBuffer = m_velocityBuffer.Get();
 valarDesc.m_uavHeap = m_valarDescriptorHeap.Get();
 valarDesc.m_bufferHeight = m_height;
 valarDesc.m_bufferWidth = m_width;
@@ -411,8 +403,6 @@ The VALAR API provides a debug overlay that can be used to visualize the VALAR b
 valarDesc.m_enable = true;
 valarDesc.m_debugOverlay = true;
 valarDesc.m_commandList = commandList.Get();
-valarDesc.m_colorBuffer = m_colorBuffer.Get();
-valarDesc.m_valarBuffer = m_valarBuffer.Get();
 valarDesc.m_uavHeap = m_valarDescriptorHeap.Get();
 
 // ...
@@ -436,7 +426,7 @@ assert(retCode == Intel::VALAR_RETURN_CODE_SUCCESS);
 * ```VALAR_RETURN_CODE_NOT_INITIALIZED``` indicates that ```Intel::VALAR_Initialize``` function failed or was never called.
 * ```VALAR_RETURN_CODE_INVALID_DEVICE``` indicates that the opaque descriptors internal device is invalid.
 * ```VALAR_RETURN_CODE_NOT_SUPPORTED``` indicates that the device does not support VRS Tier 2
-* ```VALAR_RETURN_CODE_INVALID_ARGUMENT``` indicates that the Command List, UAV Heap, VRS buffer, or Color buffer is invalid.
+* ```VALAR_RETURN_CODE_INVALID_ARGUMENT``` indicates that the Command List or UAV Heap is invalid.
 
 ## Releasing the VALAR API
 
