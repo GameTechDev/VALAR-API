@@ -137,10 +137,10 @@ size[VALAR_SHADER_16X16] = sizeof(g_valar16x16ByteCode) / sizeof(const unsigned 
 D3DCreateBlob(size[VALAR_SHADER_16X16], &m_valarDescriptor.m_shaderBlobs[VALAR_SHADER_16X16]);
 memcpy(m_valarDescriptor.m_shaderBlobs[VALAR_SHADER_16X16]->GetBufferPointer(), g_valar16x16ByteCode, size[VALAR_SHADER_16X16]);
 
-// Provide the VALAR 8x8 Debug Shader Blob Byte Code.
-size[VALAR_DEBUG_SHADER] = sizeof(g_valar8x8DebugByteCode) / sizeof(const unsigned char);
+// Provide the VALAR Debug Shader Blob Byte Code.
+size[VALAR_DEBUG_SHADER] = sizeof(g_valarDebugByteCode) / sizeof(const unsigned char);
 D3DCreateBlob(size[VALAR_DEBUG_SHADER], &m_valarDescriptor.m_shaderBlobs[VALAR_DEBUG_SHADER]);
-memcpy(m_valarDescriptor.m_shaderBlobs[VALAR_DEBUG_SHADER]->GetBufferPointer(), g_valar8x8DebugByteCode, size[VALAR_DEBUG_SHADER]);
+memcpy(m_valarDescriptor.m_shaderBlobs[VALAR_DEBUG_SHADER]->GetBufferPointer(), g_valarDebugByteCode, size[VALAR_DEBUG_SHADER]);
 
 // Check VRS Hardware Features & Initialize the Opaque Descriptor with Custom Shaders
 Intel::VALAR_RETURN_CODE returnCode = Intel::VALAR_Initialize(m_valarDescriptor);
