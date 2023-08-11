@@ -339,7 +339,7 @@ For Example, to render a VALAR mask for an 1920x1080 native resolution render ta
 Thread Groups X: 1920 / 8 = 240
 Thread Groups Y: 1080 / 8 = 135
 
-Original Thread Groups: 240 * 135 = 32,640
+Standard Thread Groups: 240 * 135 = 32,640
 ```
 
 #### VALAR Low-Power # Thread Groups
@@ -347,7 +347,7 @@ Original Thread Groups: 240 * 135 = 32,640
 Thread Groups X: = 1920 / 8 / 8 = 30
 Thread Groups Y: = 1080 / 8 / 8 = 16.8 ~= 17
 
-Low Power Thread Groups: = 30 * 17 = 510
+Low-Power Thread Groups: = 30 * 17 = 510
 ```
 
 In ValarLPCS.hlsl the thread group size for the shader is is defined as 8x8x1. Unlike ```Intel::VALAR_ComputeMask``` the [numthreads()] intrinsic of the ```Intel::VALAR_ComputeMaskLP``` compute shader is not coupled to the shading rate tile size. 
@@ -364,7 +364,7 @@ For example, to compute the total number of threads dispatched for a 1920x1080 n
 Threads X: 240 * 8 = 1920
 Threads Y: 135 * 8 = 1080
 
-# VALAR Original Threads: 1920 * 1080 = 2,073,600
+# VALAR Standard Threads: 1920 * 1080 = 2,073,600
 ```
 
 #### VALAR Low-Power # Threads
