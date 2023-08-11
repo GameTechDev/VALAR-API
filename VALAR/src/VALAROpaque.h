@@ -32,6 +32,7 @@ namespace Intel
     {
         ComPtr<ID3D12Device>        m_device;
         ComPtr<ID3D12RootSignature> m_valarRootSignature;
+        ComPtr<ID3D12RootSignature> m_valarLPRootSignature;
         ComPtr<ID3D12RootSignature> m_valarDebugRootSignature;
         ComPtr<ID3D12PipelineState> m_valarShaderPermutations[VALAR_SHADER_COUNT];
         VALAR_HARDWARE_FEATURES     m_featureSupport{};
@@ -70,6 +71,7 @@ namespace Intel
 
     VALAR_RETURN_CODE CheckHardwareSupport(VALAR_DESCRIPTOR& desc, VALAR_HARDWARE_FEATURES& featureSupport);
     VALAR_RETURN_CODE CreateVALARRootSignature(VALAR_DESCRIPTOR& desc);
+    VALAR_RETURN_CODE CreateVALARLPRootSignature(VALAR_DESCRIPTOR& desc);
     VALAR_RETURN_CODE CreateVALARDebugRootSignature(VALAR_DESCRIPTOR& desc);
     VALAR_RETURN_CODE LoadShader(VALAR_DESCRIPTOR& desc, VALAR_SHADER_PERMUTATIONS permutation);
 }

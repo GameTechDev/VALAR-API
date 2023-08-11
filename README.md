@@ -28,7 +28,7 @@ It is important to understand that there are limitations to the VALAR API.
 
 ### The ```VALAR_DESCRIPTOR``` Struct
 
-The VALAR API relies on an opaque descriptor pattern. As such each function in the API requires a descriptor parameter. Upon initialization the ```VALAR_DESCRITPOR``` struct will store a ```ID3D12Device``` in an internal "opaque" descriptor. Once the descriptor is initialized, it needs to be kept in memory and re-used for each subsequent call to the VALAR API. 
+The VALAR API relies on an opaque descriptor pattern. As such each function in the API requires a descriptor parameter. Upon initialization the ```VALAR_DESCRIPTPOR``` struct will store a ```ID3D12Device``` in an internal "opaque" descriptor. Once the descriptor is initialized, it needs to be kept in memory and re-used for each subsequent call to the VALAR API. 
 
 ```c++
 struct VALAR_DESCRIPTOR
@@ -63,7 +63,7 @@ The ```VALAR_DESCRIPTOR``` contains parameters to control the settings for the V
 
 The sensitivity of the VALAR algorithm is controlled through several floating point parameters; these include the Sensitivity Threshold (```m_sensitivityThreshold```), the Quarter Rate Shading Modifier (```m_quarterRateShadingModifier```), Additive Environment Luminance (```m_environmentLuminance```).. 
 
-There are several parameters that also control the behavior of the VALAR API and the VALAR Algorithm. The Base Shading Rate (```m_baseShadingRate```) parameter works when setting VRS Combiners. Allow Quarter Rate Shading (```m_allowQuarterRateShading```) with toggle the use of the 2x4, 4x2, and 4x4 shading rates in the mask. The Weber-Fechner Mode paramter (```m_weberFechnerMode```) allows you to control the precision of the VALAR algorithm using the Weber-Fechner Constant (```m_weberFechnerConstant```). 
+There are several parameters that also control the behavior of the VALAR API and the VALAR Algorithm. The Base Shading Rate (```m_baseShadingRate```) parameter works when setting VRS Combiners. Allow Quarter Rate Shading (```m_allowQuarterRateShading```) with toggle the use of the 2x4, 4x2, and 4x4 shading rates in the mask. The Weber-Fechner Mode parameter (```m_weberFechnerMode```) allows you to control the precision of the VALAR algorithm using the Weber-Fechner Constant (```m_weberFechnerConstant```). 
 
 The use of motion vectors can be enabled or disabled using the Use Motion Vectors (```m_useMotionVectors```) and Use Upscale Motion Vectors (```m_useUpscaleMotionVectors```) parameters; both toggle the behavior of the velocity portions of the VALAR algorithm. When using Upscaled Motion Vectors you must also supply an upscaled buffer width (```m_upscaleWidth```) and height (```m_upscaleHeight```). 
 
@@ -115,10 +115,11 @@ Intel::VALAR_RETURN_CODE returnCode = Intel::VALAR_Initialize(m_valarDescriptor2
 
 ### ```VALAR_DESCRIPTOR``` PSO Initialization
 
-There are four shaders that are used to support VALAR at runtime, there are two VALAR compute shaders for the common shading rate tile sizes of 8x8 and 16x16 along with two VALAR debug compute shaders that also come in 8x8 and 16x16 versions. 
+There are four shaders that are used to support VALAR at runtime, there are two VALAR compute shaders for the common shading rate tile sizes of 8x8 and 16x16 along with a Low-Power (LP) compute shading and a debug overlay compute shader. 
 
 * ```Valar8x8CS.hlsl``` VALAR Compute Shader for 8x8 Shading Rate Tile Size (Supported by Intel) 
 * ```Valar16x16CS.hlsl``` VALAR Compute Shader for 16x16 Shading Rate Tile Size (Other Vendors)
+* ```ValarLPCS.hlsl``` VALAR Low Power Compute Shading (Any Vendor)
 * ```ValarDebugCS.hlsl``` VALAR Debug Overlay Shader for 8x8 & 16x16 Shading Rate Tile Size
 
 By default these shaders are embedded into the ```.lib``` file generated at compile time. The API uses the ```#define EMBED_VALAR_SHADERS``` to control the inclusion of the embedded shaders. However, if ```EMBED_VALAR_SHADERS``` is not defined shader blobs must be provided at initialize time. Failure to supply blobs in the VALAR descriptor will result in a ```VALAR_RETURN_CODE_PSO_FAIL``` return code. For example, the following code initializes the VALAR API using byte code arrays as ```ID3DBlobs```. It is up to the application programmer to determine how to load the byte code arrays at runtime.
@@ -136,6 +137,11 @@ memcpy(m_valarDescriptor.m_shaderBlobs[VALAR_SHADER_8X8]->GetBufferPointer(), g_
 size[VALAR_SHADER_16X16] = sizeof(g_valar16x16ByteCode) / sizeof(const unsigned char);
 D3DCreateBlob(size[VALAR_SHADER_16X16], &m_valarDescriptor.m_shaderBlobs[VALAR_SHADER_16X16]);
 memcpy(m_valarDescriptor.m_shaderBlobs[VALAR_SHADER_16X16]->GetBufferPointer(), g_valar16x16ByteCode, size[VALAR_SHADER_16X16]);
+
+// Provide the VALAR Low Power Shader Blob Byte Code.
+size[VALAR_LP_SHADER] = sizeof(g_valarLPByteCode) / sizeof(const unsigned char);
+D3DCreateBlob(size[VALAR_LP_SHADER], &m_valarDescriptor.m_shaderBlobs[VALAR_LP_SHADER]);
+memcpy(m_valarDescriptor.m_shaderBlobs[VALAR_LP_SHADER]->GetBufferPointer(), g_valarLPByteCode, size[VALAR_LP_SHADER]);
 
 // Provide the VALAR Debug Shader Blob Byte Code.
 size[VALAR_DEBUG_SHADER] = sizeof(g_valarDebugByteCode) / sizeof(const unsigned char);
@@ -280,7 +286,7 @@ assert(retCode == Intel::VALAR_RETURN_CODE_SUCCESS);
 
 ### Using Velocity
 
-VALAR supports both native-resolution and XeSS upscaled-resolution motion vectors. As mentioned in the previous section native-resolution velocity is passed in to the compute shader in ```m_uavHeap``` UAV slot 2, while the upscaled motion vectors are passed in UAV slot 3. To enable native-resolution motion vectors set ```m_useMotionVectors = true``` and ```m_useUpscaledMotionVectors = false```. To enable XeSS upscaled-resolution motion vectors set ```m_useMotionVectors = true``` and ```m_useUpscaledMotionVectors = true``` and specify upscaled width and height in ```m_upscaledWidth``` and ```m_upscaledHeight``` fields.
+VALAR supports both native-resolution and XeSS upscaled-resolution motion vectors. As mentioned in the previous section native-resolution velocity is passed in to the compute shader in ```m_uavHeap``` UAV slot 2, while the upscaled motion vectors are passed in UAV slot 3. To enable native-resolution motion vectors set ```m_useMotionVectors = true``` and ```m_useUpscaledMotionVectors = false```. To enable upscaled-resolution motion vectors for super-sampled render targets set ```m_useMotionVectors = true``` and ```m_useUpscaledMotionVectors = true``` and specify upscaled width and height in ```m_upscaledWidth``` and ```m_upscaledHeight``` fields.
 
 ```c++
 
@@ -310,7 +316,117 @@ assert(retCode == Intel::VALAR_RETURN_CODE_SUCCESS);
 
 Once the ```Intel::VALAR_ComputeMask``` function returns successfully you can apply the mask to any valid graphics command list. 
 
-## Appling a VALAR Mask
+## Generate a VALAR Mask (Low-Power Mode)
+
+While ```Intel::VALAR_ComputeMask``` does produce a high quality VRS mask it can be expensive for large render targets or integrated GPUs. ```Intel::VALAR_ComputeMaskLP``` can execute an approximation of the VALAR algorithm which reduces the cost of the compute shader with minimal quality loss in the VRS buffer. The descriptor parameters for ```Intel::VALAR_ComputeMaskLP``` are exactly the same as ```Intel::VALAR_ComputeMask``` making ```Intel::VALAR_ComputeMaskLP``` an drop-in replacement for ```Intel::VALAR_ComputeMask```. It should be noted that Low Power Mode works best with 2x2 Only Mode.
+
+### Reducing Compute Threads Dispatched
+
+```Intel::VALAR_ComputeMaskLP``` works by reducing the number of thread groups and threads dispatched. To reduce the number of threads groups the dispatch size is modified to be width & height of the native resolution buffer divided by the shading rate tile size, which is then divided by the thread group size of 8.
+
+```c++
+// # Thread Groups in X = (width / tileSize) / 8
+// # Thread Groups in Y = (height / tileSize) / 8
+m_commandList.Dispatch(
+    (UINT)ceilf(((float)desc.m_bufferWidth / (float)desc.m_pOpaque->m_featureSupport.m_shadingRateTileSize) / 8.0f),
+    (UINT)ceilf(((float)desc.m_bufferHeight / (float)desc.m_pOpaque->m_featureSupport.m_shadingRateTileSize) / 8.0f), 1);
+```
+
+For Example, to render a VALAR mask for an 1920x1080 native resolution render target with a VRS tile size of 8x8 the following equations are used to determine how many thread groups are dispatched.
+
+#### VALAR Original # Thread Groups
+```cpp
+Thread Groups X: 1920 / 8 = 240
+Thread Groups Y: 1080 / 8 = 135
+
+Original Thread Groups: 240 * 135 = 32,640
+```
+
+#### VALAR Low Power # Thread Groups
+```cpp
+Thread Groups X: = 1920 / 8 / 8 = 30
+Thread Groups Y: = 1080 / 8 / 8 = 16.8 ~= 17
+
+Low Power Thread Groups: = 30 * 17 = 510
+```
+
+Then in ValarLPCS.hlsl the thread group size for the shader is is defined as 8x8x1. Unlike ```Intel::VALAR_ComputeMask``` the [numthreads()] intrinsic of the ```Intel::VALAR_ComputeMaskLP``` compute shader is not coupled to the shading rate tile size. 
+
+```hlsl
+// 8x8 threads dispatched per thread group
+[numthreads(8, 8, 1)]
+```
+
+For example, to compute the total number of threads dispatched for a 1920x1080 native resolution render target the following equations are used.
+
+#### VALAR Original # Threads
+```cpp
+Threads X: 240 * 8 = 1920
+Threads Y: 135 * 8 = 1080
+
+# VALAR Original Threads: 1920 * 1080 = 2,073,600
+```
+
+#### VALAR LP # Threads
+```cpp
+Threads X: 30 * 8 = 240
+Threads Y: 17 * 8 = 136
+
+# VALAR Low-Power Threads: 240 * 136 = 32,640
+```
+
+### Reducing Samples Per VRS Tile
+
+Each thread is then responsible for computing the average luminance and luminance differences for each tile in the VRS buffer. To reduce the number of reads from the original native resolution buffer, only 4 pixels are sampled from the native resolution buffer per thread. These pixels are the pixels adjacent to the centroid of the VRS Tile.
+
+![Alt text](/VALAR/img/LPAverageLuma.png?raw=true "Average Luminance")
+
+By only sampling four adjacent pixels the local luminance differences in the X-Axis and Y-Axis can be computed without additional sampling.
+
+![Alt text](/VALAR/img/LPLumaXDifferences.png?raw=true "X-Axis Luma Differences") ![Alt text](/VALAR/img/LPLumaYDifferences.png?raw=true "Y-Axis Luma Differences")
+
+For an 8x8 VRS Tile, there are 3 samples per pixel in the native resolution buffer. However, by only executing 1 thread per tile and 4 samples per thread, the number of samples is thus reduced from *8 * 8 * 3 = 192 Samples* to *1 * 1 * 4 = 4 Samples*
+
+Additionally, due to the modified thread group dispatch and sampling patterns two ```GroupMemoryBarrierWithGroupSync()``` calls are removed from ValarLPCS.hlsl
+
+### JND Threshold Changes
+
+Due to the increased sensitivity of a reduced number of luminance samples it was necessary to reduce the incoming sensitivity threshold of the algorithm to get the approximation to more closely match the original implementation. This was done by dividing the sensitivity threshold by 2.
+
+```JND = (SensitivityThreshold / 2) * (AverageLuminance + EnvironmentalLuminance)```
+
+### Comparing VALAR and VALAR Low-Power VRS Masks
+
+Due to the modifications to the thread groups and sampling pattern, the resulting VALAR mask produced by ```Intel::VALAR_ComputeMaskLP``` is only an approximation of a mask generated by  ```Intel::VALAR_ComputeMask```. However, the mask that is produced is very similar to the original with only some slight noise introduced. The differences in each mask can be compared using an image comparison tool such as Beyond Compare.
+
+#### 1080p
+
+![Alt text](/VALAR/img/1080p-comparison.png?raw=true "1080p VALAR Mask Diff")
+
+#### 2k
+
+![Alt text](/VALAR/img/2k-comparison.png?raw=true "2k VALAR Mask Diff")
+
+#### 4k
+
+![Alt text](/VALAR/img/4k-comparison.png?raw=true "4k VALAR Mask Diff")
+
+#### Similar Pixels vs. Different Pixels
+
+The number of similar and different pixels can be computed from the image diff for each of the masks above. At 1080p in the sample image used, ~79% of pixels where the same while ~21% changed. As the resolution increased to 2k, the percent of similar pixels increased to ~88% and the number of different pixels decreased to ~12%. Increasing the resolution further to 4k resulted in ~91% of pixels staying the same and only ~9% of pixels changing. 
+
+![Alt text](/VALAR/img/comparison-data.png?raw=true "VALAR Mask Difference Data")
+
+```Intel::VALAR_ComputeMaskLP``` will return an return code of ```VALAR_RETURN_CODE_SUCCESS``` if the mask is successfully generated. Otherwise the following VALAR error codes will be returned.
+
+* ```VALAR_RETURN_CODE_NOT_INITIALIZED``` indicates that ```Intel::VALAR_Initialize``` function failed or was never called.
+* ```VALAR_RETURN_CODE_INVALID_DEVICE``` indicates that the opaque descriptors internal device is invalid.
+* ```VALAR_RETURN_CODE_NOT_SUPPORTED``` indicates that the device does not support VRS Tier 2
+* ```VALAR_RETURN_CODE_INVALID_ARGUMENT``` indicates that the Command List, UAV Heap, or VRS buffer is invalid.
+
+Once the ```Intel::VALAR_ComputeMaskLP``` function returns successfully you can apply the mask to any valid graphics command list.
+
+## Applying a VALAR Mask
 
 After a mask has been generated it needs to be applied to the next frame. Masks can be applied using the ```Intel::VALAR_ApplyMask``` function. Internally ```Intel::VALAR_ApplyMask``` calls ```ID3D12GraphicsCommandList5::RSSetShadingRateImage```. To apply a mask, a valid ```VALAR_DESCRIPTOR``` must be passed with a valid ```ID3D12GraphicsCommandList5``` assigned to ```m_commandList``` parameter along with a valid ```ID3D12Resource``` passed in the ```m_valarBuffer``` parameter.
 
@@ -443,9 +559,9 @@ If the call to any of these functions is successful a return code ```VALAR_RETUR
 
 ![Alt text](/VALAR/img/VALAR_Screenshot_1080p_Allow4x4_DebugOverlay.png?raw=true "Debug Overlay")
 
-The VALAR API provides a debug overlay that can be used to visualize the VALAR buffer at runtime to aid in debugging. The debug visualization works on both native resolution render targets as well as upscaled render targets from Intel XeSS. To use the debug overlay a ```VALAR_DESCRIPTOR``` must be used with the  ```m_debugOverlay``` field set to true. The ```VALAR_DESCRIPTOR``` must also have a valid ```ID3D12GraphicsCommandList5``` pointer set for the ```m_commandList``` field along with valid resources for the color buffer (```m_colorBuffer```), VRS buffer (```m_valarBuffer```), and SRV/UAV heap (```m_uavHeap```).
+The VALAR API provides a debug overlay that can be used to visualize the VALAR buffer at runtime to aid in debugging. The debug visualization works on both native resolution render targets as well as upscaled render targets. To use the debug overlay a ```VALAR_DESCRIPTOR``` must be used with the  ```m_debugOverlay``` field set to true. The ```VALAR_DESCRIPTOR``` must also have a valid ```ID3D12GraphicsCommandList5``` pointer set for the ```m_commandList``` field along with valid resources for the color buffer (```m_colorBuffer```), VRS buffer (```m_valarBuffer```), and SRV/UAV heap (```m_uavHeap```).
 
-The Debug Overlay requires a 2 slot UAV heap; UAV slot 0 contains the VRS Buffer to visualize, while UAV slot 2 will contain a native resolution color UAV or an XeSS upscaled color UAV to draw the overlay on. An upscaled width and height must always be passed in through the descriptor using ```m_upscaledWidth``` and ```m_upscaledHeight```. When using a native resolution color buffer, set ```m_upscaledWidth``` and ```m_upscaledHeight``` equal to ```m_nativeWidth``` and ```m_nativeHeight``` respectively. 
+The Debug Overlay requires a 2 slot UAV heap; UAV slot 0 contains the VRS Buffer to visualize, while UAV slot 2 will contain a native resolution color UAV or an upscaled color UAV to draw the overlay on. An upscaled width and height must always be passed in through the descriptor using ```m_upscaledWidth``` and ```m_upscaledHeight```. When using a native resolution color buffer, set ```m_upscaledWidth``` and ```m_upscaledHeight``` equal to ```m_nativeWidth``` and ```m_nativeHeight``` respectively. 
 
 ```c++
 

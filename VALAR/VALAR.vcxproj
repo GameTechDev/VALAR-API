@@ -62,6 +62,16 @@
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">g_valar8x8DebugByteCode</VariableName>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">-Qembed_debug</AdditionalOptions>
     </FxCompile>
+    <FxCompile Include="src\ValarLPCS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.2</ShaderModel>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">g_valarLPByteCode</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">src\%(Filename).h</HeaderFileOutput>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.2</ShaderModel>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">g_valarLPByteCode</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">src\%(Filename).h</HeaderFileOutput>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />

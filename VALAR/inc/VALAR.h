@@ -71,6 +71,7 @@ namespace Intel
         VALAR_SHADER_8X8,
         VALAR_SHADER_16X16,
         VALAR_DEBUG_SHADER,
+        VALAR_LP_SHADER,
         VALAR_SHADER_COUNT
     } VALAR_SHADER_PERMUTATIONS;
 
@@ -104,6 +105,7 @@ namespace Intel
         bool                                m_debugOverlay                      = false;
         bool                                m_debugGrid                         = false;
         bool                                m_enabled                           = true;
+        bool                                m_LPShader                          = false;
         UINT                                m_bufferWidth                       = 0;
         UINT                                m_bufferHeight                      = 0;
         UINT                                m_upscaleWidth                      = 0;
@@ -121,6 +123,7 @@ namespace Intel
     const VALAR_RETURN_CODE VALAR_Initialize(VALAR_DESCRIPTOR& desc);
     const VALAR_RETURN_CODE VALAR_Release(const VALAR_DESCRIPTOR& desc);
     const VALAR_RETURN_CODE VALAR_ComputeMask(const VALAR_DESCRIPTOR& desc);
+    const VALAR_RETURN_CODE VALAR_ComputeMaskLP(const VALAR_DESCRIPTOR& desc);
     const VALAR_RETURN_CODE VALAR_DebugOverlay(const VALAR_DESCRIPTOR& desc);
     const VALAR_RETURN_CODE VALAR_ApplyMask(const VALAR_DESCRIPTOR& desc);
     const VALAR_RETURN_CODE VALAR_ResetMask(const VALAR_DESCRIPTOR& desc);

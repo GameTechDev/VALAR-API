@@ -52,6 +52,9 @@
     <FxCompile Include="src\Valar16x16CS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="src\ValarLPCS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\VRSCommon.hlsli">
